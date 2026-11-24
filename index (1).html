@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Stok Gudang</title>
+<style>
+  :root {
+    --bg: #f7f7f5;
+    --surface: #ffffff;
+    --text: #1a1a1a;
+    --text-muted: #6b6b6b;
+    --border: #e4e4e1;
+    --accent: #2563eb;
+    --accent-text: #ffffff;
+    --danger: #dc2626;
+    --low-bg: #fef2f2;
+    --low-text: #b91c1c;
+    --ok-bg: #f0fdf4;
+    --ok-text: #15803d;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #17181a;
+      --surface: #232427;
+      --text: #f0f0f0;
+      --text-muted: #9a9a9a;
+      --border: #34353a;
+      --accent: #3b82f6;
+      --accent-text: #ffffff;
+      --danger: #f87171;
+      --low-bg: #3a1f1f;
+      --low-text: #fca5a5;
+      --ok-bg: #16281b;
+      --ok-text: #86efac;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #17181a;
+    --surface: #232427;
+    --text: #f0f0f0;
+    --text-muted: #9a9a9a;
+    --border: #34353a;
+    --accent: #3b82f6;
+    --accent-text: #ffffff;
+    --danger: #f87171;
+    --low-bg: #3a1f1f;
+    --low-text: #fca5a5;
+    --ok-bg: #16281b;
+    --ok-text: #86efac;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .wrap {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 24px 16px 60px;
+  }
+  h1 {
+    font-size: 22px;
+    margin: 4px 0 2px;
+  }
+  .sub {
+    color: var(--text-muted);
+    font-size: 13px;
+    margin-bottom: 20px;
+  }
+  .status {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 14px;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 20px;
+  }
+  .card h2 {
+    font-size: 15px;
+    margin: 0 0 12px;
+  }
+  form.add-form {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr auto;
+    gap: 8px;
+  }
+  @media (max-width: 560px) {
+    form.add-form { grid-template-columns: 1fr 1fr; }
+    form.add-form .full { grid-column: 1 / -1; }
+  }
+  input, select {
+    font-size: 14px;
+    padding: 9px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    width: 100%;
+  }
+  button {
+    font-size: 14px;
+    padding: 9px 14px;
+    border-radius: 8px;
+    border: none;
+    background: var(--accent);
+    color: var(--accent-text);
+    cursor: pointer;
+    font-weight: 600;
+  }
+  button.secondary {
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+    font-weight: 500;
+  }
+  button.danger-ghost {
+    background: transparent;
+    color: var(--danger);
+    border: 1px solid var(--border);
+    font-weight: 500;
+    padding: 6px 10px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+  thead th {
+    text-align: left;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-muted);
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  tbody td {
+    padding: 8px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  .qty-input {
+    width: 80px;
+  }
+  .take-input {
+    width: 70px;
+  }
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .badge.low { background: var(--low-bg); color: var(--low-text); }
+  .badge.ok { background: var(--ok-bg); color: var(--ok-text); }
+  .actions-cell {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .empty {
+    color: var(--text-muted);
+    font-size: 14px;
+    padding: 20px 0;
+    text-align: center;
+  }
+  .overflow {
+    overflow-x: auto;
+  }
+  .readonly-note {
+    font-size: 12px;
+    color: var(--low-text);
+    background: var(--low-bg);
+    padding: 8px 10px;
+    border-radius: 8px;
+    margin-bottom: 14px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>📦 Stok Gudang</h1>
+  <div class="sub">Data tersimpan bersama &mdash; semua yang membuka halaman ini melihat dan mengubah stok yang sama secara real-time.</div>
+  <div id="statusLine" class="status">Memuat data...</div>
+  <div id="readonlyNote"></div>
+
+  <div class="card">
+    <h2>Tambah Barang</h2>
+    <form class="add-form" id="addForm">
+      <input type="text" id="newName" placeholder="Nama barang" required>
+      <input type="number" id="newQty" placeholder="Jumlah" min="0" step="1" required>
+      <input type="text" id="newUnit" placeholder="Satuan (pcs, box, kg...)">
+      <button type="submit">Tambah</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>Daftar Stok</h2>
+    <div class="overflow">
+      <table id="stockTable">
+        <thead>
+          <tr>
+            <th>Nama Barang</th>
+            <th>Jumlah</th>
+            <th>Satuan</th>
+            <th>Status</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody id="stockBody"></tbody>
+      </table>
+      <div id="emptyMsg" class="empty" style="display:none;">Belum ada barang. Tambahkan barang pertama di atas.</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Riwayat Pengambilan</h2>
+    <div class="overflow">
+      <table id="historyTable">
+        <thead>
+          <tr>
+            <th>Waktu</th>
+            <th>Nama Barang</th>
+            <th>Jumlah Diambil</th>
+          </tr>
+        </thead>
+        <tbody id="historyBody"></tbody>
+      </table>
+      <div id="historyEmptyMsg" class="empty" style="display:none;">Belum ada riwayat pengambilan.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+let db = null;
+let canWrite = true; // becomes false if a write is rejected due to permission
+let itemsCache = {};
+let historyCache = [];
+const LOW_STOCK_THRESHOLD = 5;
+
+const statusLine = document.getElementById('statusLine');
+const stockBody = document.getElementById('stockBody');
+const emptyMsg = document.getElementById('emptyMsg');
+const addForm = document.getElementById('addForm');
+const readonlyNote = document.getElementById('readonlyNote');
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function setReadonly() {
+  canWrite = false;
+  readonlyNote.innerHTML = '<div class="readonly-note">Mode lihat saja: Anda tidak memiliki izin untuk mengubah data ini.</div>';
+  addForm.querySelectorAll('input, button').forEach(el => el.disabled = true);
+}
+
+function renderRows() {
+  const ids = Object.keys(itemsCache);
+  if (ids.length === 0) {
+    stockBody.innerHTML = '';
+    emptyMsg.style.display = 'block';
+    return;
+  }
+  emptyMsg.style.display = 'none';
+  ids.sort((a, b) => {
+    const na = (itemsCache[a].name || '').toLowerCase();
+    const nb = (itemsCache[b].name || '').toLowerCase();
+    return na.localeCompare(nb);
+  });
+
+  stockBody.innerHTML = ids.map(id => {
+    const item = itemsCache[id];
+    const name = escapeHtml(item.name || '');
+    const unit = escapeHtml(item.unit || '-');
+    const qty = typeof item.quantity === 'number' ? item.quantity : 0;
+    const isLow = qty <= LOW_STOCK_THRESHOLD;
+    const badge = isLow
+      ? '<span class="badge low">Stok Menipis</span>'
+      : '<span class="badge ok">Aman</span>';
+    return `
+      <tr data-id="${escapeHtml(id)}">
+        <td>${name}</td>
+        <td><input type="number" class="qty-input" value="${qty}" min="0" step="1" data-id="${escapeHtml(id)}"></td>
+        <td>${unit}</td>
+        <td>${badge}</td>
+        <td class="actions-cell">
+          <input type="number" class="take-input" placeholder="Ambil" min="1" step="1" data-id="${escapeHtml(id)}">
+          <button class="secondary take-btn" data-id="${escapeHtml(id)}">Ambil</button>
+          <button class="secondary save-btn" data-id="${escapeHtml(id)}">Simpan</button>
+          <button class="danger-ghost delete-btn" data-id="${escapeHtml(id)}">Hapus</button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  stockBody.querySelectorAll('.save-btn').forEach(btn => {
+    btn.addEventListener('click', () => saveQty(btn.dataset.id));
+  });
+  stockBody.querySelectorAll('.delete-btn').forEach(btn => {
+    btn.addEventListener('click', () => deleteItem(btn.dataset.id));
+  });
+  stockBody.querySelectorAll('.take-btn').forEach(btn => {
+    btn.addEventListener('click', () => takeItem(btn.dataset.id));
+  });
+}
+
+function formatTime(iso) {
+  try {
+    const d = new Date(iso);
+    return d.toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' });
+  } catch (e) {
+    return iso;
+  }
+}
+
+function renderHistory() {
+  const historyBody = document.getElementById('historyBody');
+  const historyEmptyMsg = document.getElementById('historyEmptyMsg');
+  if (historyCache.length === 0) {
+    historyBody.innerHTML = '';
+    historyEmptyMsg.style.display = 'block';
+    return;
+  }
+  historyEmptyMsg.style.display = 'none';
+  historyBody.innerHTML = historyCache.map(entry => `
+    <tr>
+      <td>${escapeHtml(formatTime(entry.at))}</td>
+      <td>${escapeHtml(entry.itemName || '-')}</td>
+      <td>${escapeHtml(String(entry.amount != null ? entry.amount : '-'))}</td>
+    </tr>
+  `).join('');
+}
+
+async function saveQty(id) {
+  if (!canWrite || !db) return;
+  const input = stockBody.querySelector(`.qty-input[data-id="${CSS.escape(id)}"]`);
+  if (!input) return;
+  const newQty = parseInt(input.value, 10);
+  if (isNaN(newQty) || newQty < 0) {
+    alert('Jumlah tidak valid.');
+    return;
+  }
+  try {
+    await db.doc('items/' + id).update({ quantity: newQty, updatedAt: new Date().toISOString() });
+  } catch (e) {
+    if (e && e.code === 'invalid_argument') {
+      setReadonly();
+    } else {
+      console.error('Gagal menyimpan jumlah:', e);
+      alert('Gagal menyimpan perubahan. Coba lagi.');
+    }
+  }
+}
+
+async function deleteItem(id) {
+  if (!canWrite || !db) return;
+  if (!confirm('Hapus barang ini dari daftar?')) return;
+  try {
+    await db.doc('items/' + id).delete();
+  } catch (e) {
+    if (e && e.code === 'invalid_argument') {
+      setReadonly();
+    } else {
+      console.error('Gagal menghapus:', e);
+      alert('Gagal menghapus barang. Coba lagi.');
+    }
+  }
+}
+
+async function takeItem(id) {
+  if (!canWrite || !db) return;
+  const input = stockBody.querySelector(`.take-input[data-id="${CSS.escape(id)}"]`);
+  if (!input) return;
+  const takeQty = parseInt(input.value, 10);
+  const item = itemsCache[id];
+  if (!item) return;
+  const currentQty = typeof item.quantity === 'number' ? item.quantity : 0;
+
+  if (isNaN(takeQty) || takeQty <= 0) {
+    alert('Masukkan jumlah yang diambil terlebih dahulu.');
+    return;
+  }
+  if (takeQty > currentQty) {
+    alert('Jumlah yang diambil melebihi stok yang tersedia (' + currentQty + ').');
+    return;
+  }
+
+  const newQty = currentQty - takeQty;
+  try {
+    await db.doc('items/' + id).update({ quantity: newQty, updatedAt: new Date().toISOString() });
+    await db.collection('riwayat').add({
+      itemId: id,
+      itemName: item.name || '',
+      amount: takeQty,
+      type: 'ambil',
+      at: new Date().toISOString()
+    });
+    input.value = '';
+  } catch (e) {
+    if (e && e.code === 'invalid_argument') {
+      setReadonly();
+    } else {
+      console.error('Gagal mencatat pengambilan:', e);
+      alert('Gagal mencatat pengambilan. Coba lagi.');
+    }
+  }
+}
+
+addForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (!canWrite || !db) return;
+  const name = document.getElementById('newName').value.trim();
+  const qty = parseInt(document.getElementById('newQty').value, 10);
+  const unit = document.getElementById('newUnit').value.trim();
+  if (!name || isNaN(qty) || qty < 0) return;
+
+  try {
+    await db.collection('items').add({
+      name,
+      quantity: qty,
+      unit: unit || 'pcs',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    });
+    addForm.reset();
+  } catch (e) {
+    if (e && e.code === 'invalid_argument') {
+      setReadonly();
+    } else {
+      console.error('Gagal menambah barang:', e);
+      alert('Gagal menambah barang. Coba lagi.');
+    }
+  }
+});
+
+async function init() {
+  let loadTimeout = setTimeout(() => {
+    statusLine.textContent = 'Data belum dapat dimuat — periksa koneksi Anda.';
+  }, 10000);
+
+  try {
+    db = await claude.use('db');
+  } catch (e) {
+    db = null;
+  }
+
+  if (!db) {
+    clearTimeout(loadTimeout);
+    statusLine.textContent = 'Penyimpanan tidak tersedia di tampilan ini.';
+    setReadonly();
+    return;
+  }
+
+  db.collection('items').onSnapshot(
+    (snap) => {
+      clearTimeout(loadTimeout);
+      itemsCache = {};
+      snap.docs.forEach(d => {
+        if (d.exists) itemsCache[d.id] = d.data();
+      });
+      renderRows();
+      const count = Object.keys(itemsCache).length;
+      statusLine.textContent = count + ' jenis barang tercatat · diperbarui secara langsung';
+    },
+    (err) => {
+      clearTimeout(loadTimeout);
+      console.error('Snapshot error:', err);
+      if (err.code === 'revoked' || err.code === 'not_granted') {
+        statusLine.textContent = 'Akses ke data ini tidak tersedia.';
+        setReadonly();
+      } else {
+        statusLine.textContent = 'Terjadi masalah saat memuat data.';
+      }
+    }
+  );
+
+  db.collection('riwayat').orderBy('at', 'desc').limit(50).onSnapshot(
+    (snap) => {
+      historyCache = snap.docs.filter(d => d.exists).map(d => d.data());
+      renderHistory();
+    },
+    (err) => {
+      console.error('History snapshot error:', err);
+    }
+  );
+}
+
+init();
+</script>
+</body>
+</html>
